@@ -35,10 +35,9 @@ app.use(cors('*'))
 app.use(bodyParser.json())
 
 app.get('/status', (req, res) => {
-    console.log(process.env)
-
     res.status(200).json({
-        status: 'ok'
+        status: 'ok',
+        proc: process.env
     })
 })
 
