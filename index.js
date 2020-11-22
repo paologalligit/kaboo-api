@@ -128,7 +128,7 @@ app.post('/api/room/start', async (req, res, next) => {
 var server = require('http').createServer(app)
 const options = {
     cors: true,
-    origins: ["http://localhost:3000", "https://kaboo-cli.herokuapp.com/"]
+    origins: ["http://localhost:3000", "https://kaboo-cli.herokuapp.com"]
 }
 console.log(process.env)
 const io = require('socket.io')(server, options)
