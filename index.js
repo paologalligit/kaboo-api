@@ -34,6 +34,11 @@ app.use(morgan())
 app.use(cors('*'))
 app.use(bodyParser.json())
 
+app.get('/status', (req, res) => {
+    res.status(200).json({
+        status: 'ok'
+    })
+})
 
 app.post('/api/auth/login', async (req, res, next) => {
     const { userName, password } = req.body
@@ -123,9 +128,9 @@ app.post('/api/room/start', async (req, res, next) => {
 var server = require('http').createServer(app)
 const options = {
     cors: true,
-    origins: ["http://localhost:3000"]
+    origins: ["http://localhost:3000", "https://kaboo-cli.herokuapp.com/"]
 }
-
+console.log(process.env)
 const io = require('socket.io')(server, options)
 
 io.on('connection', socket => {
@@ -182,8 +187,8 @@ io.on('connection', socket => {
         io.to(roomId).emit('point', { team, point })
     })
 
-    socket.on('newTurn', ({ roomId }) => {    
-        incrementPointer(roomId)  
+    socket.on('newTurn', ({ roomId }) => {
+        incrementPointer(roomId)
         io.to(roomId).emit('startCountdown', { time: 5 })
     })
 
