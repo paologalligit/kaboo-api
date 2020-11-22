@@ -23,7 +23,9 @@ const {
 } = require('./utils/room')
 
 const {
-    WORDS_IN_DB
+    WORDS_IN_DB,
+    getGuesserWord,
+    getGuesserForbidden
 } = require('./utils/words')
 
 const app = express()
@@ -34,13 +36,6 @@ app.use(morgan())
 app.use(cors('*'))
 app.use(bodyParser.json())
 
-app.get('/status', (req, res) => {
-    console.log(process.env)
-
-    res.status(200).json({
-        status: 'ok'
-    })
-})
 
 app.post('/api/auth/login', async (req, res, next) => {
     const { userName, password } = req.body
@@ -130,8 +125,9 @@ app.post('/api/room/start', async (req, res, next) => {
 var server = require('http').createServer(app)
 const options = {
     cors: true,
-    origins: ["http://localhost:3000", "https://kaboo-cli.herokuapp.com"]
+    origins: ["http://localhost:3000"]
 }
+
 const io = require('socket.io')(server, options)
 
 io.on('connection', socket => {
@@ -170,7 +166,7 @@ io.on('connection', socket => {
         socket.emit('roles', { role: getRoleInTurn(hide, team, roomId) })
     })
 
-    socket.on('getWord', async ({ roomId, seed }) => {
+    socket.on('getWord', async ({ requestingUser, roomId, seed }) => {
         console.log('the seed: ', seed)
         const id = seed % WORDS_IN_DB
         console.log('the id: ', id)
@@ -178,9 +174,11 @@ io.on('connection', socket => {
         const query = { id: id.toString() }
         const word = await db.words.findOne(query)
 
-        io.to(roomId).emit('word', {
-            word: word.guess,
-            forbidden: word.forbidden
+        const hide = isUserRequestingTheGuesser(requestingUser, roomId)
+        console.log('user ', requestingUser, ' is guesser? ', hide)
+        socket.emit('word', {
+            word: hide ? getGuesserWord(word.guess.length) : word.guess,
+            forbidden: hide ? getGuesserForbidden(word.forbidden) : word.forbidden
         })
     })
 
@@ -188,9 +186,13 @@ io.on('connection', socket => {
         io.to(roomId).emit('point', { team, point })
     })
 
-    socket.on('newTurn', ({ roomId }) => {
-        incrementPointer(roomId)
+    socket.on('newTurn', ({ roomId }) => {    
+        incrementPointer(roomId)  
         io.to(roomId).emit('startCountdown', { time: 5 })
+    })
+
+    socket.on('ask4word', ({ roomId }) => {
+        io.to(roomId).emit('ask4word')
     })
 
     socket.on('disconnect', () => {
