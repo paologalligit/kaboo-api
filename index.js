@@ -35,6 +35,8 @@ app.use(cors('*'))
 app.use(bodyParser.json())
 
 app.get('/status', (req, res) => {
+    console.log(process.env)
+
     res.status(200).json({
         status: 'ok'
     })
@@ -130,7 +132,6 @@ const options = {
     cors: true,
     origins: ["http://localhost:3000", "https://kaboo-cli.herokuapp.com"]
 }
-console.log(process.env)
 const io = require('socket.io')(server, options)
 
 io.on('connection', socket => {
