@@ -161,7 +161,6 @@ io.on('connection', socket => {
     })
 
     socket.on('joinRoom', ({ name, roomId, totPlayers, team }) => {
-        console.log('joiningn ', name)
         userJoinWithTeam(socket.id, name, roomId, team)
         socket.join(roomId)
 
@@ -188,15 +187,14 @@ io.on('connection', socket => {
     })
 
     socket.on('getWord', async ({ requestingUser, roomId, seed }) => {
-        console.log('the seed: ', seed)
         const id = seed % WORDS_IN_DB
-        console.log('the id: ', id)
+
         const db = await mongo.getDb()
         const query = { id: id.toString() }
         const word = await db.words.findOne(query)
 
         const hide = isUserRequestingTheGuesser(requestingUser, roomId)
-        console.log('user ', requestingUser, ' is guesser? ', hide)
+
         socket.emit('word', {
             word: hide ? getGuesserWord(word.guess.length) : word.guess,
             forbidden: hide ? getGuesserForbidden(word.forbidden) : word.forbidden

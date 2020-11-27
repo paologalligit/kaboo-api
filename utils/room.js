@@ -111,7 +111,6 @@ const setOnePlayerReady = roomId => {
     } else {
         roomEnv.playersReady = 1
     }
-    //console.log('accessed room ', roomId, ' with ', roomEnv.playersReady, ' players ready')
 }
 
 const roomPlayersAllReady = (roomId, tot) => {
@@ -168,7 +167,7 @@ const isUserRequestingTheGuesser = (user, roomId) => {
 const getRoleInTurn = (isGuesser, team, roomId) => {
     if (isGuesser) return 'Guesser'
     const user = getGuesserForRoom(roomId)
-    console.log('the guessere user: ', user)
+
     if (user.team === team) return 'Speaker'
 
     return 'Checker'
