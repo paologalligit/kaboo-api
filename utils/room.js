@@ -122,24 +122,26 @@ const roomPlayersAllReady = (roomId, tot) => {
 const createTurns = roomId => {
     if (turns[roomId] && turns[roomId].guessers) {
         // turns already created
+        console.log('turns already created ', turns[roomId])
         const { guessers } = turns[roomId]
         return guessers
     } else {
         const users = rooms[roomId]
-
+        console.log('creating turns')
         const one = users.filter(u => u.team === 0)
         const two = users.filter(u => u.team === 1)
 
         const currentTurns = interleave(one, two)
 
         turns[roomId] = { guessers: currentTurns, pointer: 0, len: currentTurns.length }
-
+        console.log(turns[roomId])
         return currentTurns
     }
 }
 
 const incrementPointer = roomId => {
     const { pointer, len } = turns[roomId]
+    console.log('incrementing pointer from ', pointer, ' to ', (pointer + 1) % len, ' with len : ', len)
     turns[roomId].pointer = (pointer + 1) % len
 }
 
