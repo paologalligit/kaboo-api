@@ -54,8 +54,29 @@ app.post('/api/auth/verifyToken', (req, res, next) => {
     res.json(result)
 })
 
-app.post('/sign', (req, res, next) => {
-
+app.post('/api/auth/signup', async (req, res, next) => {
+    const { userName, password } = req.body
+    const db = await mongo.getDb()
+    try {
+        const result = await db.user.insert({ userName, password })
+        res.json(result)
+    } catch (err) {
+        const { code } = err
+        let errorMessage 
+        switch (code) {
+            case 11000:
+                errorMessage = 'Error: duplicate user'
+                break;
+        
+            default:
+                errorMessage = `Error while inserting user ${userName}`
+                break;
+        }
+        res.json({
+            error: true,
+            errorMessage
+        })
+    }
 })
 
 app.get('/api/room/:roomId', async (req, res, next) => {
@@ -186,8 +207,8 @@ io.on('connection', socket => {
         io.to(roomId).emit('point', { team, point })
     })
 
-    socket.on('newTurn', ({ roomId }) => {    
-        incrementPointer(roomId)  
+    socket.on('newTurn', ({ roomId }) => {
+        incrementPointer(roomId)
         io.to(roomId).emit('startCountdown', { time: 5 })
     })
 
