@@ -175,6 +175,33 @@ const getRoleInTurn = (isGuesser, team, roomId) => {
     return 'Checker'
 }
 
+const removeUserFromTurn = (roomId, user) => {
+    console.log('BEFORE turns: ', turns[roomId])
+    const { guessers, len } = turns[roomId]
+    turns[roomId].guessers = guessers.filter(u => u.name !== user)
+    turns[roomId].len = len - 1
+
+    console.log('AFTER turns: ', turns[roomId])
+
+    if (turns[roomId].len <= 0) {
+        cleanTurns(roomId)
+        console.log('after removing: ', turns[roomId])
+    }
+}
+
+const cleanTurns = roomId => {
+    delete turns[roomId]
+}
+
+const cleanRoom = roomId => {
+    delete rooms[roomId]
+}
+
+const getUsersInTurn = (roomId, user) => {
+    const usersInRoom = getUsersInRoom(roomId)
+    return usersInRoom.filter(u => u.name !== user)
+}
+
 module.exports = {
     getRoomId,
     userJoin,
@@ -192,5 +219,7 @@ module.exports = {
     setWordForRoom,
     isUserRequestingTheGuesser,
     getRoleInTurn,
-    incrementPointer
+    incrementPointer,
+    removeUserFromTurn,
+    getUsersInTurn
 }
