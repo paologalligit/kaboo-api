@@ -19,7 +19,9 @@ const {
     createTurns,
     isUserRequestingTheGuesser,
     getRoleInTurn,
-    incrementPointer
+    incrementPointer,
+    removeUserFromTurn,
+    getUsersInTurn
 } = require('./utils/room')
 
 const {
@@ -62,12 +64,12 @@ app.post('/api/auth/signup', async (req, res, next) => {
         res.json(result)
     } catch (err) {
         const { code } = err
-        let errorMessage 
+        let errorMessage
         switch (code) {
             case 11000:
                 errorMessage = 'Error: duplicate user'
                 break;
-        
+
             default:
                 errorMessage = `Error while inserting user ${userName}`
                 break;
@@ -212,6 +214,19 @@ io.on('connection', socket => {
 
     socket.on('ask4word', ({ roomId }) => {
         io.to(roomId).emit('ask4word')
+    })
+
+    socket.emit('leaveRoom', ({ user, roomId }) => {
+        userLeave(user.id)
+        socket.leave(roomId)
+    })
+
+    socket.on('leaveGame', ({ roomId, user }) => {
+        removeUserFromTurn(roomId, user)
+        socket.leave(roomId)
+        console.log(`${user} left`)
+        console.log('remaining: ', getUsersInTurn(roomId, user))
+        io.to(roomId).emit('userLeft', { user, users: getUsersInTurn(roomId, user) })
     })
 
     socket.on('disconnect', () => {
