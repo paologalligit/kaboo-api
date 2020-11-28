@@ -1,3 +1,5 @@
+const mongo = require('../db/mongo')
+
 const rooms = {}
 const turns = {}
 
@@ -39,11 +41,16 @@ const teamJoin = (id, teams, room) => {
 }
 
 const getRoomUsers = room => {
-    return rooms[room].map(user => user.name)
+    if (rooms[room]) {
+        return rooms[room].map(user => user.name)
+    }
+
+    return []
 }
 
 const userLeave = id => {
     let user
+
     for (const room of Object.keys(rooms)) {
         const result = rooms[room].filter(user => user.id === id)
         if (result.length > 0) {
@@ -53,6 +60,16 @@ const userLeave = id => {
             }
 
             rooms[room] = rooms[room].filter(user => user.id !== id)
+
+            if (rooms[room].length === 0) {
+                cleanRoom(room)
+                mongo.getDb()
+                    .then(db => {
+                        db.room.deleteOne({ roomId: room })
+                            .then(res => console.log(`room ${room} deleted`))
+                            .catch(err => console.log('error while deleting room from db: ', err))
+                    })
+            }
 
             break
         }
@@ -133,7 +150,12 @@ const createTurns = roomId => {
 
         const currentTurns = interleave(one, two)
 
-        turns[roomId] = { speakers: currentTurns, pointer: 0, len: currentTurns.length }
+        turns[roomId] = {
+            speakers: currentTurns,
+            pointer: 0,
+            len: currentTurns.length,
+            readyForWord: []
+        }
         console.log(turns[roomId])
         return currentTurns
     }
@@ -208,6 +230,21 @@ const isUserRequestingTheGuesser = (name, team, roomId) => {
     return speaker.team === team && speaker.name !== name
 }
 
+const setUserReadyToGetWord = (roomId, socket, role) => {
+    turns[roomId].readyForWord.push({ playerSocket: socket, role })
+}
+
+const allUsersReadyToGetWord = roomId => {
+    const { readyForWord, len } = turns[roomId]
+    const allReady = len === readyForWord.length
+
+    if (allReady) {
+        turns[roomId].readyForWord = []
+    }
+
+    return [allReady, readyForWord]
+}
+
 module.exports = {
     getRoomId,
     userJoin,
@@ -230,5 +267,7 @@ module.exports = {
     getUsersInTurn,
     isUserRequestingTheGuesser,
     cleanTurns,
-    cleanRoom
+    cleanRoom,
+    setUserReadyToGetWord,
+    allUsersReadyToGetWord
 }

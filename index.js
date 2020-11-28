@@ -22,15 +22,16 @@ const {
     incrementPointer,
     removeUserFromTurn,
     getUsersInTurn,
-    isUserRequestingTheGuesser,
     cleanTurns,
-    cleanRoom
+    cleanRoom,
+    setUserReadyToGetWord,
+    allUsersReadyToGetWord
 } = require('./utils/room')
 
 const {
-    WORDS_IN_DB,
     getGuesserWord,
-    getGuesserForbidden
+    getGuesserForbidden,
+    getRandomWordIndex
 } = require('./utils/words')
 
 const app = express()
@@ -191,19 +192,25 @@ io.on('connection', socket => {
         socket.emit('roles', { role: getRoleInTurn(speaker, team, roomId) })
     })
 
-    socket.on('getWord', async ({ requestingUser, roomId, team, seed }) => {
-        const id = seed % WORDS_IN_DB
+    socket.on('getWord', async ({ requestingUser, roomId, team, seed, role }) => {
+        setUserReadyToGetWord(roomId, socket, role)
 
-        const db = await mongo.getDb()
-        const query = { id: id.toString() }
-        const word = await db.words.findOne(query)
+        const [allReady, usersList] = allUsersReadyToGetWord(roomId)
 
-        const hide = isUserRequestingTheGuesser(requestingUser, team, roomId)
+        if (allReady) {
+            const id = getRandomWordIndex()
 
-        socket.emit('word', {
-            word: hide ? getGuesserWord(word.guess.length) : word.guess,
-            forbidden: hide ? getGuesserForbidden(word.forbidden) : word.forbidden
-        })
+            const db = await mongo.getDb()
+            const query = { id: id.toString() }
+            const word = await db.words.findOne(query)
+            
+            usersList.forEach(({ playerSocket, role }) => {
+                playerSocket.emit('word', {
+                    word: role === 'Guesser' ? getGuesserWord(word.guess.length) : word.guess,
+                    forbidden: role === 'Guesser' ? getGuesserForbidden(word.forbidden) : word.forbidden
+                })
+            })
+        }
     })
 
     socket.on('point', ({ team, roomId, point }) => {
@@ -256,7 +263,7 @@ io.on('connection', socket => {
         const user = userLeave(socket.id)
         if (user) {
             console.log(`user ${user.name} disconnected`)
-            io.to(user.room).emit('roomUsers', getRoomUsers(user.room))
+            io.to(user.room).emit('roomUsers', getRoomUsers(user.room))           
         }
     })
 });
