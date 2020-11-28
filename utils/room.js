@@ -120,11 +120,11 @@ const roomPlayersAllReady = (roomId, tot) => {
 }
 
 const createTurns = roomId => {
-    if (turns[roomId] && turns[roomId].guessers) {
+    if (turns[roomId] && turns[roomId].speakers) {
         // turns already created
         console.log('turns already created ', turns[roomId])
-        const { guessers } = turns[roomId]
-        return guessers
+        const { speakers } = turns[roomId]
+        return speakers
     } else {
         const users = rooms[roomId]
         console.log('creating turns')
@@ -133,7 +133,7 @@ const createTurns = roomId => {
 
         const currentTurns = interleave(one, two)
 
-        turns[roomId] = { guessers: currentTurns, pointer: 0, len: currentTurns.length }
+        turns[roomId] = { speakers: currentTurns, pointer: 0, len: currentTurns.length }
         console.log(turns[roomId])
         return currentTurns
     }
@@ -156,29 +156,29 @@ const setWordForRoom = (word, roomId) => {
     turns[roomId].words = word
 }
 
-const getGuesserForRoom = roomId => {
-    const { guessers, pointer, len } = turns[roomId]
-    return guessers[pointer % len]
+const getSpeakerForRoom = roomId => {
+    const { speakers, pointer, len } = turns[roomId]
+    return speakers[pointer % len]
 }
 
-const isUserRequestingTheGuesser = (user, roomId) => {
+const isUserRequestingTheSpeaker = (user, roomId) => {
     //console.log('is user the guesser: ', user, getGuesserForRoom(roomId).name)
-    return getGuesserForRoom(roomId).name === user
+    return getSpeakerForRoom(roomId).name === user
 }
 
-const getRoleInTurn = (isGuesser, team, roomId) => {
-    if (isGuesser) return 'Guesser'
-    const user = getGuesserForRoom(roomId)
+const getRoleInTurn = (isSpeaker, team, roomId) => {
+    if (isSpeaker) return 'Speaker'
+    const user = getSpeakerForRoom(roomId)
 
-    if (user.team === team) return 'Speaker'
+    if (user.team === team) return 'Guesser'
 
     return 'Checker'
 }
 
 const removeUserFromTurn = (roomId, user) => {
     console.log('BEFORE turns: ', turns[roomId])
-    const { guessers, len } = turns[roomId]
-    turns[roomId].guessers = guessers.filter(u => u.name !== user)
+    const { speakers, len } = turns[roomId]
+    turns[roomId].speakers = speakers.filter(u => u.name !== user)
     turns[roomId].len = len - 1
 
     console.log('AFTER turns: ', turns[roomId])
@@ -202,6 +202,12 @@ const getUsersInTurn = (roomId, user) => {
     return usersInRoom.filter(u => u.name !== user)
 }
 
+const isUserRequestingTheGuesser = (name, team, roomId) => {
+    const speaker = getSpeakerForRoom(roomId)
+    console.log('the speaker: ', speaker)
+    return speaker.team === team && speaker.name !== name
+}
+
 module.exports = {
     getRoomId,
     userJoin,
@@ -217,9 +223,12 @@ module.exports = {
     userJoinWithTeam,
     getWordForRoom,
     setWordForRoom,
-    isUserRequestingTheGuesser,
+    isUserRequestingTheSpeaker,
     getRoleInTurn,
     incrementPointer,
     removeUserFromTurn,
-    getUsersInTurn
+    getUsersInTurn,
+    isUserRequestingTheGuesser,
+    cleanTurns,
+    cleanRoom
 }
