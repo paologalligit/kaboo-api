@@ -25,7 +25,8 @@ const {
     cleanTurns,
     cleanRoom,
     setUserReadyToGetWord,
-    allUsersReadyToGetWord
+    allUsersReadyToGetWord,
+    userLeaveAndDeleteRoom
 } = require('./utils/room')
 
 const {
@@ -227,7 +228,7 @@ io.on('connection', socket => {
     })
 
     socket.on('leaveRoom', ({ user, roomId }) => {
-        userLeave(user)
+        userLeaveAndDeleteRoom(user)
         socket.leave(roomId)
 
         const usersInRoom = getRoomUsers(roomId)

@@ -48,7 +48,7 @@ const getRoomUsers = room => {
     return []
 }
 
-const userLeave = id => {
+const userLeaveAndDeleteRoom = id => {
     let user
 
     for (const room of Object.keys(rooms)) {
@@ -70,6 +70,25 @@ const userLeave = id => {
                             .catch(err => console.log('error while deleting room from db: ', err))
                     })
             }
+
+            break
+        }
+    }
+    return user
+}
+
+const userLeave = id => {
+    let user
+
+    for (const room of Object.keys(rooms)) {
+        const result = rooms[room].filter(user => user.id === id)
+        if (result.length > 0) {
+            user = {
+                name: result[0].name,
+                room
+            }
+
+            rooms[room] = rooms[room].filter(user => user.id !== id)
 
             break
         }
@@ -250,6 +269,7 @@ module.exports = {
     userJoin,
     getRoomUsers,
     userLeave,
+    userLeaveAndDeleteRoom,
     getUsersInRoom,
     splitTeams,
     setTeams,
