@@ -10,7 +10,8 @@ const {
     getRoomId,
     userJoin,
     getRoomUsers,
-    userLeave,
+    userLeaveGame,
+    userLeaveRoom,
     getUsersInRoom,
     splitTeams,
     setTeams,
@@ -23,10 +24,8 @@ const {
     removeUserFromTurn,
     getUsersInTurn,
     cleanTurns,
-    cleanRoom,
     setUserReadyToGetWord,
-    allUsersReadyToGetWord,
-    userLeaveAndDeleteRoom
+    allUsersReadyToGetWord
 } = require('./utils/room')
 
 const {
@@ -92,11 +91,10 @@ app.get('/api/room/:roomId', async (req, res, next) => {
         res.status(400).json({ error: 'Specify a room id' })
         return
     }
-    console.log(roomId)
+
     const db = await mongo.getDb()
     const result = await db.room.findOne({ roomId })
 
-    console.log(result)
     if (result) {
         res.status(200).json({ found: true, room: { roomId } })
     } else {
@@ -195,16 +193,14 @@ io.on('connection', socket => {
 
     socket.on('getWord', async ({ requestingUser, roomId, team, seed, role }) => {
         setUserReadyToGetWord(roomId, socket, role)
-
         const [allReady, usersList] = allUsersReadyToGetWord(roomId)
 
         if (allReady) {
             const id = getRandomWordIndex()
-
             const db = await mongo.getDb()
             const query = { id: id.toString() }
             const word = await db.words.findOne(query)
-            
+
             usersList.forEach(({ playerSocket, role }) => {
                 playerSocket.emit('word', {
                     word: role === 'Guesser' ? getGuesserWord(word.guess.length) : word.guess,
@@ -228,43 +224,36 @@ io.on('connection', socket => {
     })
 
     socket.on('leaveRoom', ({ user, roomId }) => {
-        userLeaveAndDeleteRoom(user)
+        userLeaveRoom(user)
         socket.leave(roomId)
-
         const usersInRoom = getRoomUsers(roomId)
-        if (usersInRoom.length === 0) {
-            cleanRoom(roomId)
-
-            mongo.getDb()
-                .then(db => {
-                    const query = { roomId }
-                    db.room.deleteOne(query)
-                        .then(res => console.log('room deleted from DB'))
-                        .catch(err => console.error('error while deleting room: ', err))
-                })
-        }
         io.to(roomId).emit('roomUsers', usersInRoom)
     })
 
     socket.on('leaveGame', ({ roomId, user }) => {
         removeUserFromTurn(roomId, user)
         socket.leave(roomId)
-        console.log(`${user} left`)
 
         const usersInTurn = getUsersInTurn(roomId, user)
         if (usersInTurn.length === 0) {
             cleanTurns(roomId)
         } else {
-            console.log('remaining: ', getUsersInTurn(roomId, user))
+            //console.log('remaining: ', getUsersInTurn(roomId, user))
             io.to(roomId).emit('userLeft', { user, users: getUsersInTurn(roomId, user) })
         }
     })
 
     socket.on('disconnect', () => {
-        const user = userLeave(socket.id)
+        // Removing from room
+        const user = userLeaveRoom(socket.id)
         if (user) {
-            console.log(`user ${user.name} disconnected`)
-            io.to(user.room).emit('roomUsers', getRoomUsers(user.room))           
+            console.log(`user ${user.name} disconnected, remaining `, getRoomUsers(user.room))
+            io.to(user.room).emit('roomUsers', getRoomUsers(user.room))
+        }
+
+        const userGame = userLeaveGame(socket.id)
+        if (userGame) {
+            io.to(userGame.room).emit('userLeft', { user: userGame, users: getUsersInTurn(userGame.room, userGame.name) })
         }
     })
 });

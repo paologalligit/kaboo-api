@@ -31,7 +31,7 @@ const userJoin = (id, name, room) => {
 const userJoinWithTeam = (id, name, room, team) => {
     const user = userJoin(id, name, room)
     user.team = team
-    console.log('useds joined room ', room, ': ', rooms[room])
+    //console.log('useds joined room ', room, ': ', rooms[room])
     return user
 }
 
@@ -48,10 +48,11 @@ const getRoomUsers = room => {
     return []
 }
 
-const userLeaveAndDeleteRoom = id => {
+const userLeaveRoom = id => {
     let user
 
     for (const room of Object.keys(rooms)) {
+        console.log('room before: ', rooms[room])
         const result = rooms[room].filter(user => user.id === id)
         if (result.length > 0) {
             user = {
@@ -61,38 +62,30 @@ const userLeaveAndDeleteRoom = id => {
 
             rooms[room] = rooms[room].filter(user => user.id !== id)
 
-            if (rooms[room].length === 0) {
-                cleanRoom(room)
-                mongo.getDb()
-                    .then(db => {
-                        db.room.deleteOne({ roomId: room })
-                            .then(res => console.log(`room ${room} deleted`))
-                            .catch(err => console.log('error while deleting room from db: ', err))
-                    })
-            }
-
             break
         }
     }
+
     return user
 }
 
-const userLeave = id => {
+const userLeaveGame = id => {
     let user
 
-    for (const room of Object.keys(rooms)) {
-        const result = rooms[room].filter(user => user.id === id)
+    for (const room of Object.keys(turns)) {
+        const result = turns[room].speakers.filter(user => user.id === id)
         if (result.length > 0) {
             user = {
                 name: result[0].name,
                 room
             }
 
-            rooms[room] = rooms[room].filter(user => user.id !== id)
+            removeUserFromTurn(room, user.name)
 
             break
         }
     }
+
     return user
 }
 
@@ -158,12 +151,11 @@ const roomPlayersAllReady = (roomId, tot) => {
 const createTurns = roomId => {
     if (turns[roomId] && turns[roomId].speakers) {
         // turns already created
-        console.log('turns already created ', turns[roomId])
+        //console.log('turns already created ', turns[roomId])
         const { speakers } = turns[roomId]
         return speakers
     } else {
         const users = rooms[roomId]
-        console.log('creating turns')
         const one = users.filter(u => u.team === 0)
         const two = users.filter(u => u.team === 1)
 
@@ -175,14 +167,14 @@ const createTurns = roomId => {
             len: currentTurns.length,
             readyForWord: []
         }
-        console.log(turns[roomId])
+        //console.log(turns[roomId])
         return currentTurns
     }
 }
 
 const incrementPointer = roomId => {
     const { pointer, len } = turns[roomId]
-    console.log('incrementing pointer from ', pointer, ' to ', (pointer + 1) % len, ' with len : ', len)
+    //console.log('incrementing pointer from ', pointer, ' to ', (pointer + 1) % len, ' with len : ', len)
     turns[roomId].pointer = (pointer + 1) % len
 }
 
@@ -217,16 +209,16 @@ const getRoleInTurn = (isSpeaker, team, roomId) => {
 }
 
 const removeUserFromTurn = (roomId, user) => {
-    console.log('BEFORE turns: ', turns[roomId])
+    //console.log('BEFORE turns: ', turns[roomId])
     const { speakers, len } = turns[roomId]
     turns[roomId].speakers = speakers.filter(u => u.name !== user)
     turns[roomId].len = len - 1
 
-    console.log('AFTER turns: ', turns[roomId])
+    //console.log('AFTER turns: ', turns[roomId])
 
     if (turns[roomId].len <= 0) {
         cleanTurns(roomId)
-        console.log('after removing: ', turns[roomId])
+        //console.log('after removing: ', turns[roomId])
     }
 }
 
@@ -245,7 +237,7 @@ const getUsersInTurn = (roomId, user) => {
 
 const isUserRequestingTheGuesser = (name, team, roomId) => {
     const speaker = getSpeakerForRoom(roomId)
-    console.log('the speaker: ', speaker)
+    //console.log('the speaker: ', speaker)
     return speaker.team === team && speaker.name !== name
 }
 
@@ -268,8 +260,8 @@ module.exports = {
     getRoomId,
     userJoin,
     getRoomUsers,
-    userLeave,
-    userLeaveAndDeleteRoom,
+    userLeaveRoom,
+    userLeaveGame,
     getUsersInRoom,
     splitTeams,
     setTeams,
