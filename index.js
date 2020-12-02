@@ -111,7 +111,8 @@ app.post('/api/room', async (req, res, next) => {
 
     const db = await mongo.getDb()
     const roomId = getRoomId()
-    const query = { name, roomId, owner }
+    const createdAt = new Date()
+    const query = { name, roomId, owner, createdAt }
     const result = await db.room.update(query, { $setOnInsert: query }, { upsert: true })
 
     if (result) {
