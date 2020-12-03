@@ -1,7 +1,7 @@
 const { Random, MersenneTwister19937 } = require('random-js')
 
 const RANDOM_GENERATOR = new Random(MersenneTwister19937.autoSeed())
-const WORDS_IN_DB = 31
+const WORDS_IN_DB = 103
 
 const getGuesserWord = len => new Array(len + 1).join('F')
 
