@@ -2,6 +2,7 @@ const mongo = require('../db/mongo')
 
 const rooms = {}
 const turns = {}
+const times = {}
 
 const getRoomId = () => {
     let text = ''
@@ -256,6 +257,26 @@ const allUsersReadyToGetWord = roomId => {
     return [allReady, readyForWord]
 }
 
+const newPressedAfterTurn = (roomId) => {
+    if (times[roomId] && times[roomId].startNewTurnTimestamp) {
+        const { startNewTurnTimestamp } = times[roomId]
+        const now = new Date()
+        if (now.getTime() - startNewTurnTimestamp.getTime() >= 60000) {
+            times[roomId].startNewTurnTimestamp = new Date()
+            return true
+        } else {
+            return false
+        }
+    } else {
+        if (times[roomId]) {
+            times[roomId].startNewTurnTimestamp = new Date()
+        } else {
+            times[roomId] = { startNewTurnTimestamp: new Date() }
+        }
+        return true
+    }
+}
+
 module.exports = {
     getRoomId,
     userJoin,
@@ -281,5 +302,6 @@ module.exports = {
     cleanTurns,
     cleanRoom,
     setUserReadyToGetWord,
-    allUsersReadyToGetWord
+    allUsersReadyToGetWord,
+    newPressedAfterTurn
 }
