@@ -25,7 +25,8 @@ const {
     getUsersInTurn,
     cleanTurns,
     setUserReadyToGetWord,
-    allUsersReadyToGetWord
+    allUsersReadyToGetWord,
+    newPressedAfterTurn
 } = require('./utils/room')
 
 const {
@@ -171,6 +172,7 @@ io.on('connection', socket => {
         socket.join(roomId)
 
         if (roomPlayersAllReady(roomId, totPlayers)) {
+            newPressedAfterTurn(roomId)
             io.to(roomId).emit('startCountdown', { time: 5 })
         }
     })
@@ -216,8 +218,10 @@ io.on('connection', socket => {
     })
 
     socket.on('newTurn', ({ roomId }) => {
-        incrementPointer(roomId)
-        io.to(roomId).emit('startCountdown', { time: 5 })
+        if (newPressedAfterTurn(roomId)) {
+            incrementPointer(roomId)
+            io.to(roomId).emit('startCountdown', { time: 5 })
+        }
     })
 
     socket.on('ask4word', ({ roomId }) => {
