@@ -15,18 +15,21 @@ const getRoomId = () => {
     return text
 }
 
-const userJoin = (id, name, room) => {
-    const user = { id, name }
-
-    if (room in rooms) {
-        if (rooms[room].findIndex(user => user.name === name) < 0) {
-            rooms[room].push(user)
+const userJoin = (id, name, room, peerId) => {
+    if (peerId) {
+        const user = { id, name, peerId }
+        console.log('2. user to be joined: ', user)
+        if (room in rooms) {
+            if (rooms[room].findIndex(user => user.name === name) < 0) {
+                rooms[room].push(user)
+            }
+        } else {
+            rooms[room] = [user]
         }
-    } else {
-        rooms[room] = [user]
+        console.log('3. the room now: ', rooms[room])
+        return user
     }
-
-    return user
+    return {}
 }
 
 const userJoinWithTeam = (id, name, room, team) => {
@@ -44,6 +47,15 @@ const teamJoin = (id, teams, room) => {
 const getRoomUsers = room => {
     if (rooms[room]) {
         return rooms[room].map(user => user.name)
+    }
+
+    return []
+}
+
+const getRoomUsersAndVideo = room => {
+    console.log('4. the rooms: ', rooms)
+    if (rooms[room]) {
+        return rooms[room]
     }
 
     return []
@@ -303,5 +315,6 @@ module.exports = {
     cleanRoom,
     setUserReadyToGetWord,
     allUsersReadyToGetWord,
-    newPressedAfterTurn
+    newPressedAfterTurn,
+    getRoomUsersAndVideo
 }

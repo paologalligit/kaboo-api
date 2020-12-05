@@ -26,7 +26,8 @@ const {
     cleanTurns,
     setUserReadyToGetWord,
     allUsersReadyToGetWord,
-    newPressedAfterTurn
+    newPressedAfterTurn,
+    getRoomUsersAndVideo
 } = require('./utils/room')
 
 const {
@@ -160,11 +161,12 @@ const io = require('socket.io')(server, options)
 
 io.on('connection', socket => {
     console.log('connection...')
-    socket.on('joinWaitingRoom', ({ name, room }) => {
-        userJoin(socket.id, name, room)
+    socket.on('joinWaitingRoom', ({ name, room, peerId }) => {
+        console.log('1. peerId', peerId)
+        userJoin(socket.id, name, room, peerId)
         socket.join(room)
 
-        io.to(room).emit('roomUsers', getRoomUsers(room))
+        io.to(room).emit('roomUsers', getRoomUsersAndVideo(room))
     })
 
     socket.on('joinRoom', ({ name, roomId, totPlayers, team }) => {
